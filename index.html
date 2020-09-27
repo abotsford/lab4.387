@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Lab 4</title>
+
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+        integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+        crossorigin=""/>
+
+        <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+        integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+        crossorigin=""></script>
+
+        <script type="text/javascript" src="data.js"></script>
+
+        <script type="text/javascript" src="data1.js"></script>
+
+  <style>
+  /* Optional: adjust the values below to change the appearance of the legend */
+  .legend {
+      padding: 6px 8px;
+      line-height: 18px;
+      background: rgba(255,255,255,0.9);
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      border-radius: 5px;
+  }
+
+   /* Optional: adjust the values below to change the appearance of the legend color boxes */
+   .legend i {
+      width: 18px;
+      height: 18px;
+      float: left;
+      margin-right: 8px;
+      opacity: 0.7;
+  }
+</style>
+
+        <style type="text/css">
+          html, body { margin: 0; padding: 0; height: 100%; }
+          #map { min-height: 100%; }
+        </style>
+
+    </head>
+
+    <body>
+        <div id="map"></div>
+
+        <script type="text/javascript">
+
+          var map = L.map('map', {
+              center: [41.878,-88.046],
+              zoom: 11
+          });
+
+        var light = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}.png', {
+           attribution: 'Map tiles by Carto, under CC BY 3.0. Data by OpenStreetMap, under ODbL.',
+           maxZoom: 11,
+           minZoom: 5
+         }).addTo(map);
+
+         var imagery = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+           attribution: 'Map data © OpenStreetMap contributors, CC-BY-SA, Imagery © Mapbox',
+           maxZoom: 11,
+           minZoom: 5,
+           id: 'mapbox.mapbox-streets-v8',
+           accessToken:'pk.eyJ1IjoiYWJvdHNmb3JkMjEiLCJhIjoiY2tlZGZha2FlMDE5ZjJ1anljOWhia2MxMCJ9.DqNRSftCp3gFZezjatqDhg'
+         });
+
+         function getColor(value) {
+    return value > 14.5 ? '#016c59':
+           value > 9.6  ? '#1c9099':
+           value > 5.4  ? '#67a9cf':
+           value > 2  ? '#bdc9e1':
+                         '#f6eff7';
+}
+        function style(feature){
+          return {
+              fillColor: getColor(feature.properties.avgdist_17),   // avgdist_17 is the field name for the average distance to a transit stop in 2017
+              weight: 2,
+              opacity: 1,
+              color: 'gray',
+              fillOpacity: 0.9,
+              dashArray: 4
+    };
+}
+
+        var subzone = L.geoJson(data, {
+            style:style
+          }).addTo(map);
+
+          var legend = L.control({position: 'bottomright'}); // Try the other three corners if you like.
+
+          legend.onAdd = function (map) {
+
+              var div = L.DomUtil.create('div', 'legend'),
+              grades = [0, 2, 5.4, 9.6, 14.5]; // The break values to define the intervals of population, note we begin from 0 here
+
+              div.innerHTML = '<b>Average Distance (mi) <br> to transit in 2017 <br></b>';
+
+              for (var i = 0; i < grades.length; i++) {
+                  div.innerHTML +=
+                  '<i style="background:' + getColor(grades[i] + 1) + '"></i>' +
+                  grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+    }
+
+    return div;
+};
+
+legend.addTo(map);
+
+var myStyle = {
+    "color": "#636363",
+    "weight": 5,
+    "opacity": 0.65
+};
+
+    var lines = L.geoJson(data1, {
+        style: myStyle
+      })
+      .addTo(map);
+
+var basemaps = {
+    "Light Canvas": light,
+    "Dark Canvas": imagery
+};
+
+var overlaymaps = {
+    "Chicago Metropolitan Area Subzones": subzone,
+    "Chicago 'L' Train Lines": lines
+};
+
+          L.control.layers(basemaps, overlaymaps).addTo(map);
+
+          // Removing the legend when the layer is removed
+          map.on('overlayremove', function(eventLayer){
+            if (eventLayer.name == 'Chicago Metropolitan Area Subzones'){ // We use the key/display name to refer to the layer
+              map.removeControl(legend); // legend is the variable name of the layer legend
+  }
+});
+
+// Adding the legend when the layer is added
+          map.on('overlayadd', function(eventLayer){
+            if (eventLayer.name == 'Chicago Metropolitan Area Subzones'){
+              legend.addTo(map);
+  }
+});
+
+
+
+        </script>
+   </body>
+</html>
